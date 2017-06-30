@@ -22,7 +22,8 @@
 #
 #
 
-APP_NAME=RealTest
+APP_NAME=ExampleApp
+DESTPATH=/var/www/html/test
 
 # Git
 if [ -d .git ]; then

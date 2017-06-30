@@ -1,2 +1,2 @@
 <?php
-echo "I am compozer";
+echo "I am compozer". PHP_EOL;

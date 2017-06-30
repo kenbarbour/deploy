@@ -60,10 +60,6 @@ while [ $# -ge 1 ]; do
       SERVERS="$2"
       shift
       ;;
-    --slack)
-      SLACKTARGET="$2"
-      shift
-      ;;
     -h|--help)
       usage
       exit ${EXIT_NORMAL}
@@ -86,15 +82,9 @@ if [ $# -lt 1 ]; then
   usage
   exit $EXIT_INVALID
 fi
-SOURCEPATH=$1
+SOURCEPATH=$(readlink -f $1)
 shift
 
-
-# Defaults
-APP_NAME=${APP_NAME:-$(basename ${SOURCEPATH})}
-DESTPATH=${DESTPATH:-"/var/www/html/${APP_NAME}"}
-SERVERS=${SERVERS:-"127.0.0.1"}
-LOG=${LOG:-~/logs/deploy/${APP_NAME}.log}
 
 log() {
   echo $1
@@ -113,19 +103,23 @@ error() {
   exit $2
 }
 
-# Start deploying
-log "Starting deploy process for ${APP_NAME}"
 
-# Check that SOURCEPATH exists
+# Check that SOURCEPATH exists and setup variable defaults
 if [ ! -d "${SOURCEPATH}" ]; then
   error "Directory ${SOURCEPATH} does not exist" ${EXIT_DNE}
 fi
-log "Deploying from directory ${SOURCEPATH}"
+APP_NAME=${APP_NAME:-$(basename $(readlink -f ${SOURCEPATH}))}
+DESTPATH=${DESTPATH:-"/var/www/html/${APP_NAME}"}
+SERVERS=${SERVERS:-"127.0.0.1"}
+LOG=${LOG:-~/logs/deploy/${APP_NAME}.log}
+
+# Start deploying
+log "Starting deploy process for directory: ${SOURCEPATH}"
 
 # Do Deployfile
 if [ -f "${SOURCEPATH}/Deployfile" ]; then
   pushd ${SOURCEPATH} > /dev/null
-  . Deployfile
+  . ./Deployfile
   DEPLOYFILE_STATUS="$?"
   popd > /dev/null
   if [ "${DEPLOYFILE_STATUS}" -ne 0 ]; then
@@ -154,11 +148,11 @@ do
 
   if [ $EXEC ]; then
     log 'Executing command:'
-    ssh -p $PORT $HOST:$DESTPATH "${EXEC}"
+    ssh -p $PORT $HOST "cd ${DESTPATH} ; ${EXEC}"
   fi
 done
 
-error "Die last minute"
+# Execute deploy_post_hook and exit
 if [ "$(type -t deploy_post_hook)" = function ]; then
   log "Running deploy_post_hook"
   deploy_post_hook
