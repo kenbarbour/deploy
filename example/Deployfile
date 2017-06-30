@@ -1,0 +1,48 @@
+#!/bin/bash
+# This file is run by the deploy script for updating and building sources
+# Treat it as you would any bash script.
+#
+# The following shell variables are available:
+# APP_NAME *
+# SOURCEPATH *
+# DESTPATH
+# LOG *
+# SERVERS
+# EXEC
+#   Variables can be overridden, but * may lead to documented behavior since
+# deploy has already began using the previous values
+#
+# The deploy script also defines the following functions:
+# log( message )
+# error( message, exit_status )
+#
+# Define the following functions to hook into certain events
+# deploy_post_hook( ) : run after deploy finishes
+# deploy_error_hook( message ) : run when an error occurs
+#
+#
+
+APP_NAME=RealTest
+
+# Git
+if [ -d .git ]; then
+  git pull
+fi
+
+# Composer
+if [ -f 'composer.phar' ]; then
+  php composer.phar install --no-dev
+fi
+
+# Webpack
+if [ -f 'webpack.mix.js' ]; then
+   npm run production
+fi
+
+deploy_post_hook() {
+  echo "DEPLOY FINISHED! DEPLOYFILE IS HAPPY!"
+}
+
+deploy_error_hook() {
+  echo "DEPLOY NO WORK! DEPLOYFILE IS SAD!"
+}
