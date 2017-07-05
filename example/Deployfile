@@ -25,6 +25,14 @@
 APP_NAME=ExampleApp
 DESTPATH=/var/www/html/test
 
+deploy_post_hook() {
+  echo "DEPLOY FINISHED! DEPLOYFILE IS HAPPY!"
+}
+
+deploy_error_hook() {
+  echo "DEPLOY NO WORK! DEPLOYFILE IS SAD!"
+}
+
 # Git
 if [ -d .git ]; then
   git pull
@@ -40,10 +48,3 @@ if [ -f 'webpack.mix.js' ]; then
    npm run production
 fi
 
-deploy_post_hook() {
-  echo "DEPLOY FINISHED! DEPLOYFILE IS HAPPY!"
-}
-
-deploy_error_hook() {
-  echo "DEPLOY NO WORK! DEPLOYFILE IS SAD!"
-}

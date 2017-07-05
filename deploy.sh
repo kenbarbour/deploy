@@ -3,7 +3,8 @@
 ## Usage: _PROG_ SOURCEPATH [options]
 ##      | _PROG_ -h|--help
 ##
-## Deploys directory at SOURCEPATH to each space-separated SSH host in SERVERS
+## Deploys directory at SOURCEPATH to each space-separated SSH host in SERVERS.
+## If SOURCEPATH contains a file named Deployfile, it is run.
 ##
 ##  Options:
 ##    -a|--app PARAM        APP_NAME to use (default basename SOURCEPATH)
@@ -14,6 +15,20 @@
 ##    -s|--servers PARAM    Space separated list of SSH Hosts
 ##
 ##    -h|--help             Display this help message
+##
+##  Deployfile:
+##    Deployfile is run within the SOURCEPATH directory. 
+##  The following variables are available within a Deployfile script:
+##    * APP_NAME : string name of the App that is being deployed
+##    * SOURCEPATH : path on the local machine to the source
+##    * DESTPATH : path on each server to serve from
+##    * SERVERS : space separated list of SSH Hosts
+##    * LOG : path to the log
+##    * EXEC : command to execute on each server after a deployment
+##
+##  If the Deployfile can optionally define the following functions:
+##    deploy_post_hook() : executed after deploy finishes running successfully
+##    deploy_error_hook(message) : executed when deploy encounters an error
 ##  
 
 prog="$0"
@@ -27,7 +42,6 @@ readonly EXIT_INVALID=1
 readonly EXIT_DNE=2
 readonly EXIT_EXEC=3
 readonly EXIT_RSYNC=4
-
 
 
 # Parse Arguments
@@ -139,7 +153,12 @@ do
   fi
   
   log "  rsyncing ${HOST} ${DESTPATH} (port ${PORT})"
-  rsync -rz -e "ssh -p $PORT" --delete $SOURCEPATH/ $HOST:$DESTPATH/ >> "${LOG}" 2>&1
+  rsync -rz \
+    --log-file="${LOG}" \
+    --exclude='Deployfile' \
+    -e "ssh -p $PORT" --delete \
+    $SOURCEPATH/ $HOST:$DESTPATH/ >> "${LOG}" 2>&1
+  #echo "rsync -rz -e \"ssh -p $PORT\" --delete $SOURCEPATH/ $HOST:$DESTPATH/"
 
   if [ $? -ne 0 ]; then
     error "Error copying sources to host $HOST:$PORT" ${EXIT_RSYNC}
