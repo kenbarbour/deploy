@@ -15,6 +15,7 @@
 ##    -s|--servers PARAM    Space separated list of SSH Hosts
 ##
 ##    -h|--help             Display this help message
+##    --rsync FLAGS         Additional rsync flags
 ##
 ##  Deployfile:
 ##    Deployfile is run within the SOURCEPATH directory. 
@@ -23,6 +24,7 @@
 ##    * SOURCEPATH : path on the local machine to the source
 ##    * DESTPATH : path on each server to serve from
 ##    * SERVERS : space separated list of SSH Hosts
+##    * RSYNC_FLAGS : string of additional rsync flags
 ##    * LOG : path to the log
 ##    * EXEC : command to execute on each server after a deployment
 ##
@@ -45,7 +47,7 @@ readonly EXIT_RSYNC=4
 
 
 # Parse Arguments
-args=$(getopt -l "app:,dest:,exec:,log:,servers:,help" -o "a:d:e:l:s:h" -- "$@")
+args=$(getopt -l "app:,dest:,exec:,log:,servers:,rsync:,help" -o "a:d:e:l:s:h" -- "$@")
 eval set -- "$args"
 while [ $# -ge 1 ]; do
   case "$1" in
@@ -72,6 +74,10 @@ while [ $# -ge 1 ]; do
       ;;
     -s|--servers)
       SERVERS="$2"
+      shift
+      ;;
+    --rsync)
+      RSYNC_FLAGS="$2"
       shift
       ;;
     -h|--help)
@@ -126,6 +132,7 @@ APP_NAME=${APP_NAME:-$(basename $(readlink -f ${SOURCEPATH}))}
 DESTPATH=${DESTPATH:-"/var/www/html/${APP_NAME}"}
 SERVERS=${SERVERS:-"127.0.0.1"}
 LOG=${LOG:-~/logs/deploy/${APP_NAME}.log}
+RSYNC_FLAGS=${RSYNC_FLAGS:-""}
 
 # Start deploying
 log "Starting deploy process for directory: ${SOURCEPATH}"
@@ -153,7 +160,7 @@ do
   fi
   
   log "  rsyncing ${HOST} ${DESTPATH} (port ${PORT})"
-  rsync -rz \
+  rsync -rz ${RSYNC_FLAGS} \
     --log-file="${LOG}" \
     --exclude='Deployfile' \
     -e "ssh -p $PORT" --delete \
